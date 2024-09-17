@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+
+<body>
+
+
+    <h2>Photo Upload</h2>
+
+    <input id="fileupload" type="file" name="fileupload" />
+    <button id="upload-button" onclick="uploadFile()"> Upload </button>
+    <div id="photos"></div>
+
+    <script>
+        async function uploadFile() {
+            let formData = new FormData();
+            formData.append("photo", fileupload.files[0]);
+            await fetch('http://localhost:8080/photos', {
+                method: "POST",
+                body: formData
+            }).then(result => result.text())
+                .then(text => alert(text));
+        }
+
+        async function getPhotos() {
+            let response = await fetch('/photos');
+            let photos = await response.text();
+            photos = JSON.parse(photos);
+            console.log(photos);
+
+
+            let photosDiv = document.getElementById("photos");
+            // dsiplay the photos that are in the ar array by using the data inside the object
+            photos.forEach(photo => {
+                let div = document.createElement("div");
+
+                let fileName = document.createElement("p");
+                fileName.innerHTML = `File Name: ${photo.fileName}`;
+                div.appendChild(fileName);
+
+                let img = document.createElement("img");
+                img.src = `data:${photo.contentType};base64,${photo.data}`;
+                div.appendChild(img);
+                photosDiv.appendChild(div);
+
+                // download button
+                let downloadButton = document.createElement("button");
+                downloadButton.innerHTML = "Download";
+                downloadButton.onclick = () => downloadPhoto(photo.id);
+                div.appendChild(downloadButton);
+
+                // delete button
+                let deleteButton = document.createElement("button");
+                deleteButton.innerHTML = "Delete";
+                deleteButton.onclick = () => deletePhoto(photo.id);
+                div.appendChild(deleteButton);
+            });
+
+        }
+
+        async function downloadPhoto(id) {
+            let response = await fetch(`/download/${id}`);
+            let photo = await response.blob();
+            let url = URL.createObjectURL(photo);
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = photo.name;
+            a.click();
+        }
+
+        async function deletePhoto(id) {
+            let response = await fetch(`/photos/${id}`, {
+                method: "DELETE"
+            });
+            let photo = await response.text();
+            alert(photo);
+        }
+
+        document.addEventListener("DOMContentLoaded", getPhotos);
+    </script>
+</body>
+
+</html>
